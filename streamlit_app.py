@@ -1,54 +1,35 @@
+from collections import namedtuple
+import altair as alt
+import math
+import pandas as pd
+import streamlit as st
+
 """
-Some boilerplate code to handle MQTT.
+# Welcome to Streamlit!
+Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
+If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
+forums](https://discuss.streamlit.io).
+In the meantime, below is an example of what you can do with just a few lines of code:
 """
-from paho.mqtt import client as mqtt
 
 
-# Reqired callbacks
-def on_connect(client, userdata, flags, rc):
-    # print(f"CONNACK received with code {rc}")
-    if rc == 0:
-        print("connected to MQTT broker")
-        client.connected_flag = True  # set flag
-    else:
-        print("Bad connection to MQTT broker, returned code=", rc)
+with st.echo(code_location='below'):
+    total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
+    num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
 
+    Point = namedtuple('Point', 'x y')
+    data = []
 
-def on_publish(client, userdata, mid):
-    print("mid: " + str(mid))
+    points_per_turn = total_points / num_turns
 
+    for curr_point_num in range(total_points):
+        curr_turn, i = divmod(curr_point_num, points_per_turn)
+        angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
+        radius = curr_point_num / total_points
+        x = radius * math.cos(angle)
+        y = radius * math.sin(angle)
+        data.append(Point(x, y))
 
-def get_mqtt_client():
-    """Return the MQTT client object."""
-    client = mqtt.Client()
-    client.connected_flag = False  # set flag
-    client.on_connect = on_connect
-    client.on_publish = on_publish
-    return client
-"""
-Some boilerplate code to handle MQTT.
-"""
-from paho.mqtt import client as mqtt
-
-
-# Reqired callbacks
-def on_connect(client, userdata, flags, rc):
-    # print(f"CONNACK received with code {rc}")
-    if rc == 0:
-        print("connected to MQTT broker")
-        client.connected_flag = True  # set flag
-    else:
-        print("Bad connection to MQTT broker, returned code=", rc)
-
-
-def on_publish(client, userdata, mid):
-    print("mid: " + str(mid))
-
-
-def get_mqtt_client():
-    """Return the MQTT client object."""
-    client = mqtt.Client()
-    client.connected_flag = False  # set flag
-    client.on_connect = on_connect
-    client.on_publish = on_publish
-    return client
+    st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
+        .mark_circle(color='#0068c9', opacity=0.5)
+        .encode(x='x:Q', y='y:Q'))
